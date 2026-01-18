@@ -1,43 +1,51 @@
 #!/usr/bin/env bash
-# new SqueakImage generator mit automatischer macOS-Installation
+# SWA Squeak Image Setup Script
+# Works on macOS, Linux, Windows (Git Bash)
 
 set -e
 set -u
 
-ZIP_FILE="$1" #Change to zip name
+INPUT="$1" # Maybe hardcode file
 DEST_DIR="${2:-.}"
-
-if [ ! -f "$ZIP_FILE" ]; then
-    echo "Fehler: ZIP-Datei '$ZIP_FILE' existiert nicht."
-    exit 1
-fi
-
-mkdir -p "$DEST_DIR"
 
 OS_TYPE="$(uname -s)"
 
+error() {
+    echo "Fehler: $1" >&2
+    exit 1
+}
+
+echo "OS: $OS_TYPE"
+
 case "$OS_TYPE" in
-    Linux*)
-        unzip -o "$ZIP_FILE" -d "$DEST_DIR"
-        ;;
     Darwin*)
-        unzip -o "$ZIP_FILE" -d "$DEST_DIR"
 
-        find "$DEST_DIR" -type f -name "*.sh" -exec chmod +x {} \;
-
-        APP_PATH="$DEST_DIR/SWA2025.app"
-        if [ -d "$APP_PATH" ]; then
-            sudo mv "$APP_PATH" /Applications/
-            sudo xattr -cr /Applications/SWA2025.app
-        else
-            echo "⚠️ Hinweis: SWA2025.app nicht gefunden, bitte manuell verschieben."
+        if [ ! -d "$INPUT" ]; then
+            error "Needs a Folder"
         fi
+
+        APP_NAME="$(basename "$INPUT")"
+        TARGET="/Applications/$APP_NAME"
+
+        sudo cp -R "$INPUT" /Applications/
+
+        sudo xattr -cr "$TARGET"
+
         ;;
-    MINGW*|MSYS*|CYGWIN*)
-        unzip -o "$ZIP_FILE" -d "$DEST_DIR"
+
+    Linux*|MINGW*|MSYS*|CYGWIN*)
+
+        if [ ! -f "$INPUT" ]; then
+            error "Unter Linux/Windows muss eine ZIP-Datei übergeben werden"
+        fi
+
+        mkdir -p "$DEST_DIR"
+        unzip -o "$INPUT" -d "$DEST_DIR"
+
         ;;
+
     *)
-        exit 1
+        error "unknow OS: $OS_TYPE"
         ;;
 esac
 
